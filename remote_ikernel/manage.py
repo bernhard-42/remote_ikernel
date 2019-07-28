@@ -139,8 +139,8 @@ def show_kernel(kernel_name):
 
 
 def add_kernel(interface, name, kernel_cmd, cpus=1, pe=None, language=None,
-               system=False, workdir=None, host=None, precmd=None,
-               launch_args=None, tunnel_hosts=None, verbose=False,
+               system=False, workdir=None, host=None, ssh_init=None, no_passwords=False,
+               precmd=None, launch_args=None, tunnel_hosts=None, verbose=False,
                launch_cmd=None):
     """
     Add a kernel. Generates a kernel.json and installs it for the system or
@@ -210,6 +210,12 @@ def add_kernel(interface, name, kernel_cmd, cpus=1, pe=None, language=None,
 
     if workdir is not None:
         argv.extend(['--workdir', workdir])
+
+    if ssh_init is not None:
+        argv.extend(['--ssh-init', ssh_init])
+
+    if no_passwords:
+        argv.extend(['--no-passwords'])
 
     if precmd is not None:
         argv.extend(['--precmd', precmd])

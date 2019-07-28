@@ -175,8 +175,8 @@ class RemoteIKernel(object):
 
     def __init__(self, connection_info=None, interface='sge', cpus=1, pe='smp',
                  kernel_cmd='ipython kernel', workdir=None, tunnel=True,
-                 host=None, precmd=None, launch_args=None, verbose=False,
-                 tunnel_hosts=None, launch_cmd=None):
+                 host=None, ssh_init=None, no_passwords=False, precmd=None, launch_args=None, 
+                 verbose=False, tunnel_hosts=None, launch_cmd=None):
         """
         Initialise a kernel on a remote machine and start tunnels.
 
@@ -197,6 +197,8 @@ class RemoteIKernel(object):
         self.pe = pe
         self.kernel_cmd = kernel_cmd
         self.host = host  # Name of node to be changed once connection is ready.
+        self.ssh_init = ssh_init
+        self.no_passwords = no_passwords
         self.tunnel_hosts = tunnel_hosts
         self.connection = None  # will usually be a spawned pexpect
         self.workdir = workdir
@@ -261,7 +263,8 @@ class RemoteIKernel(object):
         """
         # TODO: does this need to be more than several ssh commands?
         self._spawn(self.tunnel_hosts_cmd)
-        check_password(self.connection)
+        if not self.no_passwords:
+            check_password(self.connection)
 
     def launch_local(self):
         """
@@ -284,6 +287,11 @@ class RemoteIKernel(object):
 
         Launch an ssh connection using pexpect so it can be interacted with.
         """
+        if self.ssh_init is not None:
+            self.log.info("Initialize SSH host")
+            cmd = json.loads(self.ssh_init)
+            subprocess.call(cmd)
+                
         self.log.info("Launching kernel over SSH.")
         if self.launch_args:
             launch_args = self.launch_args
@@ -299,7 +307,8 @@ class RemoteIKernel(object):
             args=launch_args, host=host)
         self.log.info("Login command: '{0}'.".format(login_cmd))
         self._spawn(login_cmd)
-        check_password(self.connection)
+        if not self.no_passwords:
+            check_password(self.connection)
 
     def launch_pbs(self):
         """
@@ -492,7 +501,8 @@ class RemoteIKernel(object):
         # connection info should have the ports being used
         tunnel_command = self.tunnel_cmd.format(**self.connection_info)
         tunnel = pexpect.spawn(tunnel_command, logfile=self.log)
-        check_password(tunnel)
+        if not self.no_passwords:
+            check_password(tunnel)
 
         self.log.info("Setting up tunnels on ports: {0}.".format(
             ", ".join(["{0}".format(self.connection_info[port_name])
@@ -521,7 +531,6 @@ class RemoteIKernel(object):
         # if an ssh tunnel dies, this is how long it will be
         # before it is revived.
         self.connection.timeout = timeout
-        time.sleep(timeout)
 
         # There might be a more elegant way to do this, but since this
         # process doesn't do anything and is managed by the notebook
@@ -649,6 +658,8 @@ def start_remote_kernel():
                         default='ipython kernel -f {host_connection_file}')
     parser.add_argument('--workdir')
     parser.add_argument('--host')
+    parser.add_argument('--ssh-init')
+    parser.add_argument('--no-passwords', action='store_true')
     parser.add_argument('--precmd')
     parser.add_argument('--launch-args')
     parser.add_argument('--verbose', action='store_true')
@@ -663,7 +674,8 @@ def start_remote_kernel():
     kernel = RemoteIKernel(connection_info=args.connection_info,
                            interface=args.interface, cpus=args.cpus, pe=args.pe,
                            kernel_cmd=args.kernel_cmd, workdir=args.workdir,
-                           host=args.host, precmd=args.precmd,
+                           host=args.host, ssh_init=args.ssh_init, 
+                           no_passwords=args.no_passwords, precmd=args.precmd,
                            launch_args=args.launch_args, verbose=args.verbose,
                            tunnel_hosts=args.tunnel_hosts,
                            launch_cmd=args.launch_cmd)
