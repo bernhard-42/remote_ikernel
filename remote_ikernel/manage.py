@@ -139,9 +139,9 @@ def show_kernel(kernel_name):
 
 
 def add_kernel(interface, name, kernel_cmd, cpus=1, pe=None, language=None,
-               system=False, workdir=None, host=None, ssh_init=None, no_passwords=False,
-               precmd=None, launch_args=None, tunnel_hosts=None, verbose=False,
-               launch_cmd=None):
+               system=False, workdir=None, host=None, ssh_init=None, ssh_timeout=30, 
+               no_passwords=False, precmd=None, launch_args=None, tunnel_hosts=None, 
+               verbose=False, launch_cmd=None):
     """
     Add a kernel. Generates a kernel.json and installs it for the system or
     user.
@@ -214,6 +214,9 @@ def add_kernel(interface, name, kernel_cmd, cpus=1, pe=None, language=None,
     if ssh_init is not None:
         argv.extend(['--ssh-init', ssh_init])
 
+    if ssh_timeout is not None:
+        argv.extend(['--ssh-timeout', ssh_timeout])
+    
     if no_passwords:
         argv.extend(['--no-passwords'])
 

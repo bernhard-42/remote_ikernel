@@ -175,8 +175,8 @@ class RemoteIKernel(object):
 
     def __init__(self, connection_info=None, interface='sge', cpus=1, pe='smp',
                  kernel_cmd='ipython kernel', workdir=None, tunnel=True,
-                 host=None, ssh_init=None, no_passwords=False, precmd=None, launch_args=None, 
-                 verbose=False, tunnel_hosts=None, launch_cmd=None):
+                 host=None, ssh_init=None, ssh_timeout=30, no_passwords=False, precmd=None, 
+                 launch_args=None, verbose=False, tunnel_hosts=None, launch_cmd=None):
         """
         Initialise a kernel on a remote machine and start tunnels.
 
@@ -198,6 +198,7 @@ class RemoteIKernel(object):
         self.kernel_cmd = kernel_cmd
         self.host = host  # Name of node to be changed once connection is ready.
         self.ssh_init = ssh_init
+        self.ssh_timeout = ssh_timeout
         self.no_passwords = no_passwords
         self.tunnel_hosts = tunnel_hosts
         self.connection = None  # will usually be a spawned pexpect
@@ -281,7 +282,7 @@ class RemoteIKernel(object):
         # Don't try and start tunnels to the same machine. Causes issues.
         self.tunnel = False
 
-    def launch_ssh(self):
+    def launch_ssh(self, ssh_timeout=5):
         """
         Initialise a connection through ssh.
 
@@ -303,8 +304,8 @@ class RemoteIKernel(object):
         else:
             host = self.host
 
-        login_cmd = 'ssh -o StrictHostKeyChecking=no {args} {host}'.format(
-            args=launch_args, host=host)
+        login_cmd = 'ssh -o ConnectTimeout={timeout} -o StrictHostKeyChecking=no {args} {host}'.format(
+            timeout=ssh_timeout, args=launch_args, host=host)
         self.log.info("Login command: '{0}'.".format(login_cmd))
         self._spawn(login_cmd)
         if not self.no_passwords:
@@ -659,6 +660,7 @@ def start_remote_kernel():
     parser.add_argument('--workdir')
     parser.add_argument('--host')
     parser.add_argument('--ssh-init')
+    parser.add_argument('--ssh-timeout')
     parser.add_argument('--no-passwords', action='store_true')
     parser.add_argument('--precmd')
     parser.add_argument('--launch-args')
