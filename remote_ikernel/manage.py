@@ -182,7 +182,7 @@ def add_kernel(interface, name, kernel_cmd, cpus=1, pe=None, language=None,
         kernel_name.append('ssh')
         kernel_name.append(host)
         display_name.append("SSH")
-        display_name.append(host)
+        display_name.append(host.split(":")[0])
     elif interface is None:
         raise ValueError("interface must be specified")
     else:
